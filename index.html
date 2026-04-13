@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BankOps-GenAI — Industrialized Multi-Model Serving Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #14b8a6;
+            --primary-glow: rgba(20,184,166,0.3);
+            --secondary: #6366f1;
+            --accent: #f43f5e;
+            --warning: #f59e0b;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --bg-dark: #030a12;
+            --bg-card: #081420;
+            --bg-elevated: #0e1e30;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-muted: #475569;
+            --border: #1a3048;
+            --gradient-main: linear-gradient(135deg, #14b8a6 0%, #6366f1 50%, #f43f5e 100%);
+        }
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body {
+            font-family:'Manrope',sans-serif; background:var(--bg-dark);
+            color:var(--text-primary); min-height:100vh;
+            background-image:
+                radial-gradient(ellipse at 5% 95%,rgba(20,184,166,0.06) 0%,transparent 50%),
+                radial-gradient(ellipse at 95% 5%,rgba(99,102,241,0.05) 0%,transparent 50%);
+        }
+        .header {
+            background:linear-gradient(180deg,rgba(20,184,166,0.04) 0%,transparent 100%);
+            border-bottom:1px solid var(--border); padding:0.6rem 2rem;
+            position:sticky; top:0; z-index:100; backdrop-filter:blur(20px);
+        }
+        .header-content{max-width:1800px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;}
+        .logo{display:flex;align-items:center;gap:0.75rem;}
+        .logo-icon{width:44px;height:44px;background:var(--gradient-main);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;position:relative;}
+        .logo-icon::after{content:'';position:absolute;inset:-2px;background:var(--gradient-main);border-radius:13px;z-index:-1;opacity:0.4;filter:blur(8px);}
+        .logo-text{font-size:1.35rem;font-weight:800;background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .logo-sub{font-size:0.55rem;color:var(--text-secondary);text-transform:uppercase;letter-spacing:3px;}
+        .badges{display:flex;gap:0.35rem;flex-wrap:wrap;}
+        .badge{background:var(--bg-card);border:1px solid var(--border);padding:0.3rem 0.65rem;border-radius:6px;font-size:0.6rem;color:var(--text-secondary);font-family:'Fira Code',monospace;}
+        .badge.live{background:rgba(34,197,94,0.12);border-color:var(--success);color:var(--success);}
+        .badge.live::before{content:'';display:inline-block;width:6px;height:6px;background:var(--success);border-radius:50%;margin-right:5px;animation:pulse 1.5s infinite;}
+        @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+        .main{max-width:1800px;margin:0 auto;padding:1.2rem 2rem;}
+        .hero{text-align:center;margin-bottom:1.2rem;}
+        .hero h1{font-size:2.1rem;font-weight:800;margin-bottom:0.3rem;background:var(--gradient-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .hero p{color:var(--text-secondary);font-size:0.92rem;}
+
+        /* Infra KPIs */
+        .infra-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:0.6rem;margin-bottom:1.2rem;}
+        .infra-kpi{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:0.8rem;text-align:center;position:relative;overflow:hidden;}
+        .infra-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+        .infra-kpi.teal::before{background:var(--primary);}
+        .infra-kpi.indigo::before{background:var(--secondary);}
+        .infra-kpi.rose::before{background:var(--accent);}
+        .infra-kpi.amber::before{background:var(--warning);}
+        .infra-kpi.green::before{background:var(--success);}
+        .infra-kpi.red::before{background:var(--danger);}
+        .infra-val{font-size:1.5rem;font-weight:800;font-family:'Fira Code',monospace;}
+        .infra-val.teal{color:var(--primary);} .infra-val.indigo{color:var(--secondary);}
+        .infra-val.rose{color:var(--accent);} .infra-val.amber{color:var(--warning);}
+        .infra-val.green{color:var(--success);} .infra-val.red{color:var(--danger);}
+        .infra-label{font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-top:0.15rem;}
+
+        .workspace{display:grid;grid-template-columns:1fr 380px;gap:1.2rem;}
+        @media(max-width:1300px){.workspace{grid-template-columns:1fr;} .infra-strip{grid-template-columns:repeat(3,1fr);}}
+
+        .card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+        .card-header{padding:0.85rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(180deg,rgba(26,48,72,0.3) 0%,transparent 100%);}
+        .card-title{font-size:0.85rem;font-weight:700;display:flex;align-items:center;gap:0.5rem;}
+        .card-body{padding:1.2rem;}
+
+        /* Model Registry */
+        .model-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.75rem;}
+        .model-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:14px;padding:1rem;transition:all 0.3s;position:relative;overflow:hidden;}
+        .model-card:hover{border-color:var(--primary);transform:translateY(-2px);}
+        .model-card.active{border-color:var(--success);box-shadow:0 0 20px rgba(34,197,94,0.15);}
+        .model-card.degraded{border-color:var(--warning);}
+        .model-card.down{border-color:var(--danger);}
+        .model-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.6rem;}
+        .model-name-wrap{}
+        .model-name{font-size:0.9rem;font-weight:700;}
+        .model-type{font-size:0.6rem;color:var(--text-muted);font-family:'Fira Code',monospace;}
+        .model-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+        .model-status-dot.healthy{background:var(--success);box-shadow:0 0 8px rgba(34,197,94,0.5);}
+        .model-status-dot.degraded{background:var(--warning);animation:pulse 1s infinite;}
+        .model-status-dot.down{background:var(--danger);animation:pulse 0.8s infinite;}
+        .model-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:0.4rem;margin-bottom:0.6rem;}
+        .mm{background:var(--bg-dark);border-radius:7px;padding:0.45rem;text-align:center;}
+        .mm-val{font-size:0.85rem;font-weight:700;font-family:'Fira Code',monospace;color:var(--primary);}
+        .mm-label{font-size:0.5rem;color:var(--text-muted);text-transform:uppercase;}
+        .model-bar{width:100%;height:4px;background:var(--bg-dark);border-radius:2px;overflow:hidden;}
+        .model-bar-fill{height:100%;border-radius:2px;transition:width 0.5s;}
+        .model-env{display:flex;gap:0.3rem;margin-top:0.5rem;}
+        .env-tag{font-size:0.5rem;padding:0.15rem 0.4rem;border-radius:4px;font-family:'Fira Code',monospace;font-weight:600;}
+        .env-tag.aws{background:rgba(245,158,11,0.15);color:var(--warning);}
+        .env-tag.gcp{background:rgba(59,130,246,0.15);color:#3b82f6;}
+        .env-tag.onprem{background:rgba(139,92,246,0.15);color:#a855f7;}
+        .env-tag.k8s{background:rgba(20,184,166,0.15);color:var(--primary);}
+
+        /* Controls */
+        .controls{display:flex;gap:0.5rem;margin-bottom:1rem;}
+        .ctrl-btn{flex:1;padding:0.65rem;background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;color:var(--text-primary);font-family:'Manrope',sans-serif;font-size:0.75rem;font-weight:600;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:0.4rem;}
+        .ctrl-btn:hover{border-color:var(--primary);background:rgba(20,184,166,0.1);}
+
+        /* Sidebar */
+        .sidebar{display:flex;flex-direction:column;gap:1rem;}
+
+        /* Live Metrics Chart */
+        .chart-container{height:120px;background:var(--bg-dark);border-radius:10px;position:relative;overflow:hidden;}
+        .chart-canvas{width:100%;height:100%;}
+
+        /* Deploy Log */
+        .deploy-log{max-height:220px;overflow-y:auto;}
+        .deploy-item{display:flex;gap:0.6rem;padding:0.55rem;background:var(--bg-elevated);border-radius:9px;margin-bottom:0.35rem;border-left:3px solid var(--primary);animation:slideIn 0.3s;}
+        .deploy-item.tf{border-left-color:var(--secondary);}
+        .deploy-item.k8s{border-left-color:var(--primary);}
+        .deploy-item.alert{border-left-color:var(--danger);}
+        .deploy-item.scale{border-left-color:var(--warning);}
+        @keyframes slideIn{from{opacity:0;transform:translateX(-8px);}to{opacity:1;transform:translateX(0);}}
+        .deploy-icon{width:28px;height:28px;background:rgba(20,184,166,0.15);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.8rem;}
+        .deploy-content{flex:1;}
+        .deploy-title{font-size:0.72rem;font-weight:600;}
+        .deploy-meta{font-size:0.58rem;color:var(--text-muted);font-family:'Fira Code',monospace;}
+
+        /* Cost Tracker */
+        .cost-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;}
+        .cost-card{background:var(--bg-dark);border-radius:10px;padding:0.7rem;text-align:center;}
+        .cost-val{font-size:1.2rem;font-weight:800;font-family:'Fira Code',monospace;}
+        .cost-label{font-size:0.55rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:0.1rem;}
+        .cost-bar{width:100%;height:4px;background:var(--bg-elevated);border-radius:2px;margin-top:0.4rem;overflow:hidden;}
+        .cost-fill{height:100%;border-radius:2px;}
+
+        /* RBAC */
+        .rbac-list{display:flex;flex-direction:column;gap:0.35rem;}
+        .rbac-item{display:flex;align-items:center;gap:0.5rem;padding:0.5rem;background:var(--bg-elevated);border-radius:8px;}
+        .rbac-avatar{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;}
+        .rbac-name{font-size:0.72rem;font-weight:600;flex:1;}
+        .rbac-role{font-size:0.58rem;font-family:'Fira Code',monospace;padding:0.15rem 0.4rem;border-radius:4px;}
+        .rbac-role.admin{background:rgba(239,68,68,0.15);color:var(--danger);}
+        .rbac-role.engineer{background:rgba(99,102,241,0.15);color:var(--secondary);}
+        .rbac-role.viewer{background:rgba(20,184,166,0.15);color:var(--primary);}
+        .rbac-role.auditor{background:rgba(245,158,11,0.15);color:var(--warning);}
+
+        /* Processing */
+        .processing-overlay{position:fixed;inset:0;background:rgba(3,10,18,0.97);display:none;flex-direction:column;align-items:center;justify-content:center;z-index:1000;}
+        .processing-overlay.active{display:flex;}
+        .k8s-anim{width:80px;height:80px;position:relative;margin-bottom:2rem;}
+        .k8s-hex{position:absolute;width:30px;height:30px;border:2px solid var(--primary);transform:rotate(45deg);animation:hexSpin 2s linear infinite;}
+        .k8s-hex:nth-child(1){top:0;left:25px;border-color:var(--primary);}
+        .k8s-hex:nth-child(2){top:25px;left:0;border-color:var(--secondary);animation-delay:0.3s;}
+        .k8s-hex:nth-child(3){top:25px;left:50px;border-color:var(--accent);animation-delay:0.6s;}
+        .k8s-hex:nth-child(4){top:50px;left:25px;border-color:var(--warning);animation-delay:0.9s;}
+        @keyframes hexSpin{0%{transform:rotate(45deg) scale(1);}50%{transform:rotate(225deg) scale(0.8);}100%{transform:rotate(405deg) scale(1);}}
+        .proc-text{font-size:1rem;font-weight:700;margin-bottom:0.4rem;}
+        .proc-stage{font-size:0.8rem;color:var(--text-muted);font-family:'Fira Code',monospace;margin-bottom:1.2rem;}
+        .proc-bar-wrap{width:260px;height:4px;background:var(--bg-elevated);border-radius:3px;overflow:hidden;}
+        .proc-bar{height:100%;background:var(--gradient-main);width:0%;transition:width 0.3s;}
+
+        /* Toast */
+        .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:0.8rem 1.2rem;display:flex;align-items:center;gap:0.5rem;box-shadow:0 15px 50px rgba(0,0,0,0.5);transform:translateY(100px);opacity:0;transition:all 0.4s;z-index:1000;}
+        .toast.show{transform:translateY(0);opacity:1;}
+        .toast-icon{font-size:1.2rem;} .toast-title{font-size:0.8rem;font-weight:600;} .toast-msg{font-size:0.65rem;color:var(--text-muted);}
+
+        ::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:var(--bg-dark);} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <div><div class="logo-text">BankOps-GenAI</div><div class="logo-sub">Multi-Model Serving Platform</div></div>
+            </div>
+            <div class="badges">
+                <span class="badge live">● 12 Models Live</span>
+                <span class="badge">Kubernetes Orchestrated</span>
+                <span class="badge">Terraform IaC</span>
+                <span class="badge">AWS + GCP + On-Prem</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="hero">
+            <h1>⚡ Industrialized AI Platform</h1>
+            <p>Multi-model serving with A/B routing, auto-scaling, drift monitoring & security-first governance for banking</p>
+        </div>
+
+        <div class="infra-strip">
+            <div class="infra-kpi teal"><div class="infra-val teal" id="modelsLive">0</div><div class="infra-label">Models Live</div></div>
+            <div class="infra-kpi indigo"><div class="infra-val indigo" id="totalRPS">0</div><div class="infra-label">Req/sec</div></div>
+            <div class="infra-kpi green"><div class="infra-val green" id="uptime">—</div><div class="infra-label">Uptime</div></div>
+            <div class="infra-kpi amber"><div class="infra-val amber" id="p99Latency">—</div><div class="infra-label">P99 Latency</div></div>
+            <div class="infra-kpi rose"><div class="infra-val rose" id="gpuUtil">—</div><div class="infra-label">GPU Util</div></div>
+            <div class="infra-kpi red"><div class="infra-val red" id="driftAlerts">0</div><div class="infra-label">Drift Alerts</div></div>
+        </div>
+
+        <div class="workspace">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">🚀 Model Fleet</h3>
+                    <span style="font-size:0.65rem;color:var(--text-muted);font-family:'Fira Code';">BentoML + Kubernetes</span>
+                </div>
+                <div class="card-body">
+                    <div class="controls">
+                        <button class="ctrl-btn" onclick="deployPlatform()">🚀 Deploy Platform</button>
+                        <button class="ctrl-btn" onclick="scaleUp()">📈 Auto-Scale</button>
+                        <button class="ctrl-btn" onclick="simulateDrift()">⚠️ Simulate Drift</button>
+                        <button class="ctrl-btn" onclick="abTest()">🔀 A/B Route</button>
+                        <button class="ctrl-btn" onclick="resetPlatform()">🔄 Reset</button>
+                    </div>
+                    <div class="model-grid" id="modelGrid">
+                        <div style="grid-column:1/-1;color:var(--text-muted);font-size:0.8rem;text-align:center;padding:2rem;">Deploy platform to see model fleet</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">📊 Live Throughput</h3></div>
+                    <div class="card-body">
+                        <div class="chart-container"><canvas id="throughputChart" class="chart-canvas"></canvas></div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">💰 Cost Tracker</h3></div>
+                    <div class="card-body">
+                        <div class="cost-grid">
+                            <div class="cost-card"><div class="cost-val" id="costGPU" style="color:var(--primary);">—</div><div class="cost-label">GPU Compute/hr</div><div class="cost-bar"><div class="cost-fill" id="costGPUFill" style="width:0%;background:var(--primary);"></div></div></div>
+                            <div class="cost-card"><div class="cost-val" id="costLLM" style="color:var(--secondary);">—</div><div class="cost-label">LLM API/hr</div><div class="cost-bar"><div class="cost-fill" id="costLLMFill" style="width:0%;background:var(--secondary);"></div></div></div>
+                            <div class="cost-card"><div class="cost-val" id="costStorage" style="color:var(--accent);">—</div><div class="cost-label">Storage/day</div><div class="cost-bar"><div class="cost-fill" id="costStorageFill" style="width:0%;background:var(--accent);"></div></div></div>
+                            <div class="cost-card"><div class="cost-val" id="costTotal" style="color:var(--warning);">—</div><div class="cost-label">Total/month</div><div class="cost-bar"><div class="cost-fill" id="costTotalFill" style="width:0%;background:var(--warning);"></div></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">🔐 RBAC · Data Sovereignty</h3></div>
+                    <div class="card-body">
+                        <div class="rbac-list" id="rbacList">
+                            <div class="rbac-item"><div class="rbac-avatar" style="background:rgba(239,68,68,0.2);color:var(--danger);">SA</div><div class="rbac-name">Sophie Admin</div><span class="rbac-role admin">ADMIN</span></div>
+                            <div class="rbac-item"><div class="rbac-avatar" style="background:rgba(99,102,241,0.2);color:var(--secondary);">TM</div><div class="rbac-name">Thomas MLEng</div><span class="rbac-role engineer">ML_ENGINEER</span></div>
+                            <div class="rbac-item"><div class="rbac-avatar" style="background:rgba(20,184,166,0.2);color:var(--primary);">CV</div><div class="rbac-name">Camille Viewer</div><span class="rbac-role viewer">READ_ONLY</span></div>
+                            <div class="rbac-item"><div class="rbac-avatar" style="background:rgba(245,158,11,0.2);color:var(--warning);">JA</div><div class="rbac-name">Jean Auditor</div><span class="rbac-role auditor">AUDITOR</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><h3 class="card-title">📋 Deploy Log</h3><span style="font-size:0.6rem;color:var(--text-muted);" id="deployCount">0 events</span></div>
+                    <div class="card-body">
+                        <div class="deploy-log" id="deployLog">
+                            <div style="color:var(--text-muted);font-size:0.75rem;text-align:center;padding:1.2rem;">Deploy platform to see events</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="processing-overlay" id="processingOverlay">
+        <div class="k8s-anim"><div class="k8s-hex"></div><div class="k8s-hex"></div><div class="k8s-hex"></div><div class="k8s-hex"></div></div>
+        <div class="proc-text">Deploying AI Platform...</div>
+        <div class="proc-stage" id="procStage">Provisioning Kubernetes cluster...</div>
+        <div class="proc-bar-wrap"><div class="proc-bar" id="procBar"></div></div>
+    </div>
+
+    <div class="toast" id="toast"><span class="toast-icon" id="toastIcon">✅</span><div><div class="toast-title" id="toastTitle">Success</div><div class="toast-msg" id="toastMsg">Done</div></div></div>
+
+    <script>
+        let models = [];
+        let deployEntries = [];
+        let metricsInterval = null;
+        let chartInterval = null;
+        let chartData = [];
+        let deployed = false;
+
+        const modelDefs = [
+            { name:'Fraud Detection RT', type:'XGBoost · Streaming', env:['aws','k8s'], cat:'classical' },
+            { name:'Credit Scoring v3', type:'LightGBM · Batch+RT', env:['aws','k8s'], cat:'classical' },
+            { name:'AML Risk Profiler', type:'GNN · Graph Neural', env:['gcp','k8s'], cat:'classical' },
+            { name:'KYC Doc Classifier', type:'ViT · Vision', env:['aws','onprem'], cat:'vision' },
+            { name:'Customer Churn', type:'CatBoost · Batch', env:['gcp','k8s'], cat:'classical' },
+            { name:'Chatbot NLU', type:'Claude 3.5 · RAG', env:['aws'], cat:'genai' },
+            { name:'Doc Q&A Agent', type:'Bedrock · RAG', env:['aws','onprem'], cat:'genai' },
+            { name:'Transaction Anomaly', type:'Isolation Forest', env:['gcp','k8s'], cat:'classical' },
+            { name:'Loan Pricing Engine', type:'Neural Net · RT', env:['aws','k8s'], cat:'classical' },
+            { name:'Regulatory Reporter', type:'LLM · Generation', env:['onprem'], cat:'genai' },
+            { name:'Portfolio Optimizer', type:'Reinforcement Learning', env:['gcp','k8s'], cat:'classical' },
+            { name:'Voice Auth', type:'WavLM · Biometric', env:['aws','onprem'], cat:'vision' },
+        ];
+
+        function deployPlatform() {
+            if (deployed) return;
+            const overlay = document.getElementById('processingOverlay');
+            const bar = document.getElementById('procBar');
+            const stage = document.getElementById('procStage');
+            overlay.classList.add('active');
+
+            const stages = [
+                'Provisioning Kubernetes cluster...',
+                'Applying Terraform infrastructure...',
+                'Pulling model artifacts from MLflow...',
+                'Building BentoML containers...',
+                'Configuring Istio service mesh...',
+                'Setting up Prometheus + Grafana...',
+                'Deploying model endpoints...',
+                'Configuring A/B routing rules...',
+                'Initializing drift monitors...',
+                'Platform ready!'
+            ];
+            let progress = 0, si = 0;
+            const iv = setInterval(() => {
+                progress += Math.random() * 12 + 5;
+                if (progress > 100) progress = 100;
+                bar.style.width = progress + '%';
+                const ns = Math.floor((progress/100)*stages.length);
+                if (ns !== si && ns < stages.length) { si = ns; stage.textContent = stages[si]; }
+                if (progress >= 100) {
+                    clearInterval(iv);
+                    setTimeout(() => { overlay.classList.remove('active'); buildFleet(); deployed = true; }, 400);
+                }
+            }, 80);
+        }
+
+        function buildFleet() {
+            models = modelDefs.map((m, i) => ({
+                ...m, id: `mdl-${String(i).padStart(3,'0')}`,
+                status: Math.random() > 0.1 ? 'healthy' : 'degraded',
+                rps: Math.floor(50 + Math.random() * 500),
+                latency: Math.floor(8 + Math.random() * 120),
+                accuracy: (88 + Math.random() * 11).toFixed(1),
+                traffic: Math.floor(40 + Math.random() * 60),
+            }));
+            renderModels();
+            updateInfraKPIs();
+            startMetrics();
+            startChart();
+            generateDeployLog();
+            updateCosts();
+            showToast('🚀', 'Platform Deployed', `${models.length} models serving`);
+        }
+
+        function renderModels() {
+            const grid = document.getElementById('modelGrid');
+            grid.innerHTML = models.map(m => `
+                <div class="model-card ${m.status === 'healthy' ? 'active' : m.status}" id="mc-${m.id}">
+                    <div class="model-top">
+                        <div class="model-name-wrap">
+                            <div class="model-name">${m.name}</div>
+                            <div class="model-type">${m.type}</div>
+                        </div>
+                        <div class="model-status-dot ${m.status}"></div>
+                    </div>
+                    <div class="model-metrics">
+                        <div class="mm"><div class="mm-val" id="rps-${m.id}">${m.rps}</div><div class="mm-label">RPS</div></div>
+                        <div class="mm"><div class="mm-val" id="lat-${m.id}">${m.latency}ms</div><div class="mm-label">P95</div></div>
+                        <div class="mm"><div class="mm-val" id="acc-${m.id}">${m.accuracy}%</div><div class="mm-label">Accuracy</div></div>
+                    </div>
+                    <div class="model-bar"><div class="model-bar-fill" style="width:${m.traffic}%;background:${m.status==='healthy'?'var(--success)':m.status==='degraded'?'var(--warning)':'var(--danger)'};"></div></div>
+                    <div class="model-env">${m.env.map(e => `<span class="env-tag ${e}">${e.toUpperCase()}</span>`).join('')}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateInfraKPIs() {
+            document.getElementById('modelsLive').textContent = models.filter(m => m.status !== 'down').length;
+            document.getElementById('totalRPS').textContent = models.reduce((a,m) => a + m.rps, 0).toLocaleString();
+            document.getElementById('uptime').textContent = '99.97%';
+            document.getElementById('p99Latency').textContent = Math.max(...models.map(m=>m.latency)) + 'ms';
+            document.getElementById('gpuUtil').textContent = (60 + Math.random()*25).toFixed(0) + '%';
+            document.getElementById('driftAlerts').textContent = models.filter(m => m.status === 'degraded').length;
+        }
+
+        function startMetrics() {
+            if (metricsInterval) clearInterval(metricsInterval);
+            metricsInterval = setInterval(() => {
+                models.forEach(m => {
+                    m.rps = Math.max(10, m.rps + Math.floor(Math.random()*40 - 20));
+                    m.latency = Math.max(5, m.latency + Math.floor(Math.random()*10 - 5));
+                    const rpsEl = document.getElementById(`rps-${m.id}`);
+                    const latEl = document.getElementById(`lat-${m.id}`);
+                    if (rpsEl) rpsEl.textContent = m.rps;
+                    if (latEl) latEl.textContent = m.latency + 'ms';
+                });
+                updateInfraKPIs();
+            }, 1500);
+        }
+
+        function startChart() {
+            const canvas = document.getElementById('throughputChart');
+            const ctx = canvas.getContext('2d');
+            chartData = Array(60).fill(0);
+            if (chartInterval) clearInterval(chartInterval);
+            chartInterval = setInterval(() => {
+                const totalRPS = models.reduce((a,m) => a + m.rps, 0);
+                chartData.push(totalRPS);
+                if (chartData.length > 60) chartData.shift();
+                drawChart(ctx, canvas);
+            }, 500);
+        }
+
+        function drawChart(ctx, canvas) {
+            canvas.width = canvas.offsetWidth * 2;
+            canvas.height = canvas.offsetHeight * 2;
+            ctx.scale(2,2);
+            const w = canvas.offsetWidth, h = canvas.offsetHeight;
+            ctx.clearRect(0,0,w,h);
+
+            if (chartData.length < 2) return;
+            const max = Math.max(...chartData) * 1.1 || 1;
+            const step = w / (chartData.length - 1);
+
+            // Gradient fill
+            const grad = ctx.createLinearGradient(0,0,0,h);
+            grad.addColorStop(0, 'rgba(20,184,166,0.3)');
+            grad.addColorStop(1, 'rgba(20,184,166,0)');
+            ctx.beginPath();
+            ctx.moveTo(0, h);
+            chartData.forEach((v,i) => { ctx.lineTo(i*step, h - (v/max)*h*0.85); });
+            ctx.lineTo(w, h);
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            // Line
+            ctx.beginPath();
+            chartData.forEach((v,i) => {
+                const x = i*step, y = h - (v/max)*h*0.85;
+                i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+            });
+            ctx.strokeStyle = '#14b8a6';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+
+        function updateCosts() {
+            const gpu = (12 + Math.random()*8).toFixed(2);
+            const llm = (4 + Math.random()*6).toFixed(2);
+            const storage = (1 + Math.random()*3).toFixed(2);
+            const total = ((Number(gpu)*720 + Number(llm)*720 + Number(storage)*30)/1000).toFixed(1);
+            document.getElementById('costGPU').textContent = `€${gpu}`;
+            document.getElementById('costLLM').textContent = `€${llm}`;
+            document.getElementById('costStorage').textContent = `€${storage}`;
+            document.getElementById('costTotal').textContent = `€${total}k`;
+            document.getElementById('costGPUFill').style.width = `${(gpu/20)*100}%`;
+            document.getElementById('costLLMFill').style.width = `${(llm/10)*100}%`;
+            document.getElementById('costStorageFill').style.width = `${(storage/4)*100}%`;
+            document.getElementById('costTotalFill').style.width = `${Math.min((total/20)*100,100)}%`;
+        }
+
+        function generateDeployLog() {
+            const log = document.getElementById('deployLog');
+            log.innerHTML = ''; deployEntries = [];
+            const events = [
+                { icon:'☸️', title:'K8s cluster provisioned', cls:'k8s', detail:'3 nodes · eu-west-1' },
+                { icon:'🏗️', title:'Terraform apply complete', cls:'tf', detail:'47 resources created' },
+                { icon:'📦', title:`${models.length} BentoML services deployed`, cls:'k8s', detail:'Rolling update 0-downtime' },
+                { icon:'🔒', title:'mTLS + RBAC configured', cls:'tf', detail:'Zero-trust network policy' },
+                { icon:'📊', title:'Prometheus scrapers active', cls:'k8s', detail:'15s scrape interval' },
+                { icon:'🔀', title:'A/B routing initialized', cls:'k8s', detail:'Istio VirtualService rules' },
+            ];
+            events.forEach((e,i) => setTimeout(() => addDeployItem(e), i*200));
+        }
+
+        function addDeployItem(event) {
+            const log = document.getElementById('deployLog');
+            const ts = new Date().toLocaleTimeString('fr-FR');
+            const item = document.createElement('div');
+            item.className = `deploy-item ${event.cls}`;
+            item.innerHTML = `<div class="deploy-icon">${event.icon}</div><div class="deploy-content"><div class="deploy-title">${event.title}</div><div class="deploy-meta">${ts} · ${event.detail}</div></div>`;
+            log.insertBefore(item, log.firstChild);
+            deployEntries.unshift(item);
+            if (deployEntries.length > 15) { deployEntries.pop().remove(); }
+            document.getElementById('deployCount').textContent = `${deployEntries.length} events`;
+        }
+
+        function scaleUp() {
+            if (!deployed) { showToast('⚠️', 'Not Deployed', 'Deploy platform first'); return; }
+            models.forEach(m => { m.rps = Math.floor(m.rps * 1.5); });
+            renderModels();
+            addDeployItem({ icon:'📈', title:'HPA auto-scale triggered', cls:'scale', detail:`Replicas 3→5 · CPU > 75%` });
+            showToast('📈', 'Auto-Scaled', 'Replicas increased across fleet');
+        }
+
+        function simulateDrift() {
+            if (!deployed) { showToast('⚠️', 'Not Deployed', 'Deploy platform first'); return; }
+            const idx = Math.floor(Math.random()*models.length);
+            models[idx].status = 'degraded';
+            models[idx].accuracy = (70 + Math.random()*10).toFixed(1);
+            renderModels();
+            updateInfraKPIs();
+            addDeployItem({ icon:'⚠️', title:`Drift detected: ${models[idx].name}`, cls:'alert', detail:`Accuracy drop: ${models[idx].accuracy}% · Evidently alert` });
+            showToast('⚠️', 'Drift Alert', `${models[idx].name} accuracy degraded`);
+        }
+
+        function abTest() {
+            if (!deployed) { showToast('⚠️', 'Not Deployed', 'Deploy platform first'); return; }
+            const idx = Math.floor(Math.random()*models.length);
+            models[idx].traffic = 50;
+            renderModels();
+            addDeployItem({ icon:'🔀', title:`A/B split: ${models[idx].name}`, cls:'k8s', detail:`v3: 50% → v4: 50% · Canary` });
+            showToast('🔀', 'A/B Routing', `${models[idx].name} traffic split 50/50`);
+        }
+
+        function resetPlatform() {
+            deployed = false; models = []; deployEntries = [];
+            if (metricsInterval) clearInterval(metricsInterval);
+            if (chartInterval) clearInterval(chartInterval);
+            document.getElementById('modelGrid').innerHTML = '<div style="grid-column:1/-1;color:var(--text-muted);font-size:0.8rem;text-align:center;padding:2rem;">Deploy platform to see model fleet</div>';
+            ['modelsLive','totalRPS','driftAlerts'].forEach(id => document.getElementById(id).textContent = '0');
+            ['uptime','p99Latency','gpuUtil'].forEach(id => document.getElementById(id).textContent = '—');
+            ['costGPU','costLLM','costStorage','costTotal'].forEach(id => document.getElementById(id).textContent = '—');
+            ['costGPUFill','costLLMFill','costStorageFill','costTotalFill'].forEach(id => document.getElementById(id).style.width = '0%');
+            document.getElementById('deployLog').innerHTML = '<div style="color:var(--text-muted);font-size:0.75rem;text-align:center;padding:1.2rem;">Deploy platform to see events</div>';
+            document.getElementById('deployCount').textContent = '0 events';
+            const canvas = document.getElementById('throughputChart');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            showToast('🔄', 'Reset', 'Platform torn down');
+        }
+
+        function showToast(icon, title, msg) {
+            document.getElementById('toastIcon').textContent = icon;
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMsg').textContent = msg;
+            const t = document.getElementById('toast');
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+    </script>
+</body>
+</html>
